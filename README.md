@@ -1,5 +1,9 @@
 # Palm Coast Heat
 
+[![make.fun · gta6-01](https://make.fun/badge/gta6-01.svg)](https://make.fun/bounty/gta6-01?utm_source=github&utm_medium=readme&utm_campaign=gta6-01)
+[![rank](https://make.fun/badge/gta6-01/kby157/palm-coast-heat-v5/rank.svg)](https://make.fun/bounty/gta6-01/leaderboard?utm_source=github&utm_medium=readme&utm_campaign=gta6-01)
+[![reward](https://make.fun/badge/gta6-01/kby157/palm-coast-heat-v5/reward.svg)](https://make.fun/bounty/gta6-01?utm_source=github&utm_medium=readme&utm_campaign=gta6-01)
+
 A golden-hour open-world crime sandbox in the browser. You are **Jax Marlowe**,
 wheelman for hire in the sun-soaked city of Palm Coast: steal rides, run eight
 story jobs for the city's fixers, rob the shops, tune your car, buy heavier
