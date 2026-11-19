@@ -6,200 +6,230 @@
 <title>Palm Coast Heat — a golden-hour crime sandbox</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  html, body { width: 100%; height: 100%; overflow: hidden; background: #10131c;
-    font-family: system-ui, "Segoe UI", Roboto, sans-serif; color: #f2ede2; }
+  html, body { height: 100%; background: #10131f; overflow: hidden; }
+  body { font-family: system-ui, "Segoe UI", Roboto, sans-serif; color: #f2ead8; }
   #wrap { position: fixed; inset: 0; }
-  #game { display: block; width: 100%; height: 100%; }
+  #game { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 
-  .hud { position: fixed; z-index: 5; pointer-events: none; }
-  .panel { background: rgba(10, 14, 22, 0.72); border: 1px solid rgba(255, 200, 90, 0.25);
-    border-radius: 10px; padding: 8px 12px; backdrop-filter: blur(2px); }
+  .panel {
+    background: rgba(10, 14, 24, 0.74);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 12px;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+  }
+  /* top-left status stack */
+  #hud-left { position: absolute; top: 14px; left: 14px; padding: 12px 16px 11px; min-width: 216px; pointer-events: none; }
+  #cash { font-size: 31px; font-weight: 800; color: #59d977; line-height: 1; }
+  #progress { margin-top: 6px; font-size: 12.5px; font-weight: 700; letter-spacing: 0.14em; color: #f2c14e; }
+  #respect { margin-top: 2px; font-size: 12.5px; font-weight: 700; letter-spacing: 0.12em; color: #7fb2e8; }
+  #healthbar { margin-top: 8px; height: 9px; border-radius: 5px; background: rgba(255, 255, 255, 0.14); overflow: hidden; }
+  #healthfill { height: 100%; width: 100%; background: linear-gradient(90deg, #e06428, #f2a03c); border-radius: 5px; transition: width 0.15s; }
+  #vehicle { margin-top: 7px; font-size: 13.5px; color: #efe6cf; }
+  #radio { margin-top: 2px; font-size: 12px; color: #8fd8d0; }
+  #hud-weapon-line { margin-top: 2px; font-size: 12.5px; font-weight: 700; letter-spacing: 0.08em; color: #ffd98a; min-height: 15px; }
 
-  #hud-left { top: 12px; left: 12px; }
-  #cash { font-size: 30px; font-weight: 800; color: #69e58a; line-height: 1; text-shadow: 0 2px 6px rgba(0,0,0,0.6); }
-  #progress { margin-top: 5px; font-size: 12.5px; font-weight: 700; letter-spacing: 1.6px; color: #ffd76a; }
-  #respect { font-size: 11.5px; font-weight: 700; letter-spacing: 1.2px; color: #9fd8ff; margin-top: 2px; }
-  #healthbar { margin-top: 7px; width: 190px; height: 10px; border-radius: 5px; background: rgba(0,0,0,0.55);
-    border: 1px solid rgba(255,255,255,0.25); overflow: hidden; }
-  #healthfill { height: 100%; width: 100%; background: linear-gradient(90deg, #ff9a3c, #ff5d5d); transition: width 0.15s; }
-  #vehicle { margin-top: 6px; font-size: 13px; color: #ffe1a8; }
-  #radio { font-size: 12px; color: #8fd8e8; margin-top: 2px; min-height: 14px; }
+  #location {
+    position: absolute; top: 196px; left: 14px; padding: 7px 14px;
+    font-size: 13px; font-weight: 800; letter-spacing: 0.22em; color: #f5efe0;
+    transition: opacity 0.3s; pointer-events: none;
+  }
+  /* top-right: stars, minimap, police */
+  #stars { position: absolute; top: 10px; right: 16px; font-size: 25px; color: #ffc528; letter-spacing: 3px; text-shadow: 0 2px 8px rgba(0,0,0,0.6); pointer-events: none; }
+  #stars .dim { color: rgba(255, 255, 255, 0.22); }
+  #minimap { position: absolute; top: 48px; right: 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.16); box-shadow: 0 6px 24px rgba(0,0,0,0.4); }
+  #police { position: absolute; top: 224px; right: 14px; padding: 9px 13px; min-width: 218px; transition: opacity 0.25s; pointer-events: none; }
+  #police .phead { font-size: 11px; font-weight: 800; letter-spacing: 0.2em; color: #ff9a8a; margin-bottom: 5px; }
+  #police .urow { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; padding: 1.5px 0; }
+  #police .ulabel { font-weight: 700; color: #f2ead8; }
+  #police .urole { font-weight: 800; letter-spacing: 0.06em; color: #f2a03c; flex: 1; }
+  #police .udist { color: #b9c4ce; }
 
-  #location { top: 178px; left: 12px; font-size: 13px; font-weight: 800; letter-spacing: 2.2px;
-    color: #fff; opacity: 0; transition: opacity 0.5s; }
-  #location.on { opacity: 1; }
+  #mute {
+    position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+    background: rgba(10, 14, 24, 0.74); color: #f2ead8; border: 1px solid rgba(255,255,255,0.14);
+    border-radius: 9px; padding: 6px 14px; font-size: 13px; cursor: pointer;
+  }
+  #bustwrap {
+    position: absolute; top: 52px; left: 50%; transform: translateX(-50%);
+    width: 250px; padding: 6px 10px 8px; opacity: 0; transition: opacity 0.2s; pointer-events: none;
+  }
+  #bustlabel { font-size: 11px; font-weight: 800; letter-spacing: 0.3em; color: #ff7a6a; text-align: center; margin-bottom: 4px; }
+  #bustbar { height: 8px; border-radius: 4px; background: rgba(255,255,255,0.15); overflow: hidden; }
+  #bustfill { height: 100%; width: 0%; background: #e0483c; }
 
-  #hud-right { top: 12px; right: 12px; text-align: right; }
-  #stars { font-size: 24px; color: #ffc840; letter-spacing: 3px; text-shadow: 0 2px 6px rgba(0,0,0,0.65); min-height: 30px; }
-  #minimap { display: block; margin-top: 6px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.35);
-    box-shadow: 0 4px 14px rgba(0,0,0,0.45); }
-  #police { margin-top: 8px; text-align: left; opacity: 0; transition: opacity 0.3s; }
-  #police.on { opacity: 1; }
-  #police .phead { font-size: 10.5px; font-weight: 800; letter-spacing: 1.6px; color: #ff9a9a; margin-bottom: 4px; }
-  .prow { display: flex; gap: 8px; align-items: baseline; font-size: 12px; padding: 1.5px 0; }
-  .plabel { font-weight: 800; color: #fff; min-width: 52px; }
-  .prole { font-weight: 800; letter-spacing: 0.8px; font-size: 11px; flex: 1; }
-  .pdist { color: #c9d4e2; font-variant-numeric: tabular-nums; }
+  /* bottom-left weapon strip */
+  #weapons { position: absolute; left: 14px; bottom: 34px; display: flex; gap: 8px; pointer-events: none; }
+  .wslot { width: 86px; padding: 7px 10px 8px; border-radius: 10px; background: rgba(10,14,24,0.66); border: 1px solid rgba(255,255,255,0.10); }
+  .wslot .wkey { font-size: 10px; font-weight: 800; color: #f2c14e; }
+  .wslot .wname { font-size: 13.5px; font-weight: 800; letter-spacing: 0.04em; color: #f2ead8; margin-top: 1px; }
+  .wslot .wsub { font-size: 11.5px; color: #b9c4ce; margin-top: 1px; }
+  .wslot.current { border-color: #f2c14e; background: rgba(30, 26, 12, 0.82); }
+  .wslot.locked { opacity: 0.55; }
+  .wslot.locked .wsub { color: #f2c14e; }
 
-  #weapons { left: 12px; bottom: 34px; }
-  #weapon { font-size: 12.5px; font-weight: 700; letter-spacing: 1px; color: #ffe1a8; margin-bottom: 5px; min-height: 15px; }
-  #weapons .slots { display: flex; gap: 6px; }
-  .slot { min-width: 86px; padding: 5px 8px; border-radius: 7px; background: rgba(10,14,22,0.72);
-    border: 1px solid rgba(255,255,255,0.22); display: flex; flex-direction: column; gap: 1px; }
-  .slot .wkey { font-size: 9.5px; font-weight: 800; color: #ffc840; }
-  .slot .wname { font-size: 12.5px; font-weight: 800; color: #fff; letter-spacing: 0.6px; }
-  .slot .wammo { font-size: 11px; color: #c9d4e2; font-variant-numeric: tabular-nums; }
-  .slot.current { border-color: #ffc840; background: rgba(60,44,8,0.8); }
-  .slot.locked { opacity: 0.45; }
+  /* bottom-right speedometer */
+  #speed { position: absolute; right: 20px; bottom: 30px; text-align: right; transition: opacity 0.25s; pointer-events: none; }
+  #speed-name { font-size: 12.5px; font-weight: 800; letter-spacing: 0.3em; color: #f2c14e; }
+  #speed-num { font-size: 62px; font-weight: 800; color: #ffffff; line-height: 0.95; text-shadow: 0 3px 14px rgba(0,0,0,0.55); }
+  #speed small { font-size: 17px; font-weight: 700; color: #f2c14e; margin-left: 4px; }
 
-  #speed { right: 16px; bottom: 40px; text-align: right; opacity: 0; transition: opacity 0.25s; }
-  #speed.on { opacity: 1; }
-  #speed-name { font-size: 12px; font-weight: 800; letter-spacing: 1.6px; color: #ffe1a8; text-transform: uppercase; }
-  #speed-num { font-size: 52px; font-weight: 800; line-height: 0.95; color: #fff; text-shadow: 0 3px 10px rgba(0,0,0,0.65);
-    font-variant-numeric: tabular-nums; }
-  #speed .unit { font-size: 14px; font-weight: 700; color: #ffd76a; letter-spacing: 1px; }
+  /* bottom-centre: dialogue, prompt, objective */
+  #dialogue {
+    position: absolute; left: 50%; bottom: 86px; transform: translateX(-50%);
+    display: flex; gap: 13px; align-items: center; max-width: 620px; padding: 13px 20px 13px 14px;
+    opacity: 0; transition: opacity 0.3s; pointer-events: none;
+  }
+  #dlg-port {
+    width: 52px; height: 52px; border-radius: 10px; flex: none;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 25px; font-weight: 800; color: #fff; background: #b5524a;
+    border: 2px solid rgba(255,255,255,0.35);
+  }
+  #dlg-name { font-size: 12px; font-weight: 800; letter-spacing: 0.24em; color: #f2c14e; }
+  #dlg-line { font-size: 15.5px; color: #f7f1e2; margin-top: 2px; line-height: 1.35; }
+  #prompt {
+    position: absolute; left: 50%; bottom: 64px; transform: translateX(-50%);
+    font-size: 15.5px; font-weight: 800; color: #ffc528; text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+    transition: opacity 0.2s; pointer-events: none; white-space: nowrap;
+  }
+  #objective {
+    position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%);
+    padding: 9px 20px; font-size: 15.5px; font-weight: 700; color: #f7f1e2; white-space: nowrap; pointer-events: none;
+  }
+  #hud-bottom { position: absolute; left: 0; right: 0; bottom: 4px; text-align: center; pointer-events: none; }
+  #hint { font-size: 11.5px; color: rgba(240, 235, 220, 0.66); text-shadow: 0 1px 4px rgba(0,0,0,0.8); }
 
-  #hud-bottom { left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; align-items: center; gap: 5px; padding-bottom: 6px; }
-  #prompt { font-size: 15.5px; font-weight: 800; color: #ffd76a; text-shadow: 0 2px 6px rgba(0,0,0,0.8);
-    opacity: 0; transition: opacity 0.2s; }
-  #prompt.on { opacity: 1; }
-  #objective { max-width: 76vw; text-align: center; font-size: 16.5px; font-weight: 700; color: #fff;
-    background: rgba(10,14,22,0.78); border: 1px solid rgba(255,200,90,0.3); border-radius: 9px; padding: 7px 18px; }
-  #bustwrap { width: 300px; opacity: 0; transition: opacity 0.2s; }
-  #bustwrap.on { opacity: 1; }
-  #bustlabel { font-size: 11px; font-weight: 800; letter-spacing: 2.4px; color: #ff7a7a; text-align: center; }
-  #bustwrap .track { height: 8px; border-radius: 4px; background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.3); overflow: hidden; }
-  #bustfill { height: 100%; width: 0%; background: #ff4040; }
-  #hint { font-size: 11.5px; color: rgba(255,255,255,0.66); text-shadow: 0 1px 3px rgba(0,0,0,0.9); }
-
-  #dialogue { left: 50%; transform: translateX(-50%); bottom: 108px; display: flex; gap: 11px; align-items: center;
-    max-width: 560px; opacity: 0; transition: opacity 0.3s; }
-  #dialogue.on { opacity: 1; }
-  #dlg-face { flex: none; width: 52px; height: 52px; border-radius: 9px; display: flex; align-items: center; justify-content: center;
-    font-size: 26px; font-weight: 800; color: #fff; border: 2px solid rgba(255,255,255,0.5); text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
-  #dlg-name { font-size: 12px; font-weight: 800; letter-spacing: 1.8px; color: #ffc840; text-transform: uppercase; }
-  #dlg-line { font-size: 15px; line-height: 1.35; color: #fff; }
-
-  #mute { position: fixed; z-index: 6; top: 12px; left: 50%; transform: translateX(-50%);
-    background: rgba(10,14,22,0.72); color: #f2ede2; border: 1px solid rgba(255,255,255,0.3);
-    border-radius: 7px; padding: 4px 12px; font-size: 12px; cursor: pointer; }
-
-  .screen { position: fixed; inset: 0; z-index: 10; display: flex; align-items: center; justify-content: center;
-    background: rgba(8, 8, 16, 0.45); opacity: 0; visibility: hidden; transition: opacity 0.25s; }
-  .screen.on { opacity: 1; visibility: visible; }
-  .card { background: rgba(13, 16, 26, 0.94); border: 1px solid rgba(255, 200, 90, 0.45); border-radius: 14px;
-    padding: 26px 34px; max-width: 620px; width: calc(100vw - 60px); box-shadow: 0 18px 50px rgba(0,0,0,0.6); }
-  .card h1 { font-size: 44px; letter-spacing: 2px; line-height: 1.02;
-    background: linear-gradient(180deg, #ffe9a8, #ff9a3c); -webkit-background-clip: text; background-clip: text; color: transparent; }
-  .card h2 { font-size: 27px; letter-spacing: 1.6px; color: #ffc840; margin-bottom: 12px; }
-  .card .sub { letter-spacing: 3.4px; font-size: 13px; color: #ffb3c8; margin: 8px 0 14px; }
-  .card p { font-size: 14.5px; line-height: 1.5; color: #e8e2d2; }
-  .card .controls { margin-top: 14px; font-size: 13px; line-height: 1.75; color: #c9d4e2; }
-  .card .press { margin-top: 16px; font-size: 16px; font-weight: 800; color: #69e58a; letter-spacing: 1px; }
-  .kv { display: flex; justify-content: space-between; gap: 20px; padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,0.12);
-    font-size: 15px; }
-  .kv b { color: #69e58a; font-variant-numeric: tabular-nums; }
-  .kv .val { color: #fff; font-weight: 700; }
-  .buyrow { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.12); font-size: 15px; }
-  .key { flex: none; width: 24px; height: 24px; border-radius: 6px; background: #ffc840; color: #191204;
-    font-weight: 800; display: flex; align-items: center; justify-content: center; font-size: 13.5px; }
-  .buyrow .grow { flex: 1; }
-  .buyrow b { color: #69e58a; font-variant-numeric: tabular-nums; }
-  .card .foot { margin-top: 13px; font-size: 12.5px; color: #9fb7c9; display: flex; justify-content: space-between; gap: 16px; }
+  /* full-screen screens */
+  .screen {
+    position: absolute; inset: 0; display: none; align-items: center; justify-content: center;
+    flex-direction: column; text-align: center; background: rgba(8, 10, 18, 0.45); z-index: 5;
+  }
+  .screen.on { display: flex; }
+  #title-screen h1 {
+    font-size: 84px; font-weight: 900; letter-spacing: 0.04em; line-height: 1;
+    background: linear-gradient(180deg, #ffe259, #ffa751 55%, #ff5d8f);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    filter: drop-shadow(0 4px 0 rgba(120, 20, 60, 0.85)) drop-shadow(0 10px 26px rgba(0,0,0,0.5));
+  }
+  #title-screen .sub { margin-top: 10px; font-size: 16px; letter-spacing: 0.5em; color: #ffd9a0; font-weight: 700; }
+  #title-screen .card { margin-top: 26px; max-width: 560px; padding: 18px 26px; font-size: 14.5px; line-height: 1.55; color: #efe8d5; }
+  #title-screen .go { margin-top: 22px; font-size: 17px; font-weight: 800; color: #59d977; letter-spacing: 0.06em; }
+  #pause-screen h2, #banner-screen #banner-title { font-size: 54px; font-weight: 900; letter-spacing: 0.05em; color: #ffe9a8; text-shadow: 0 4px 22px rgba(0,0,0,0.6); }
+  #pause-screen p { margin-top: 10px; font-size: 15px; color: #d8d2c0; }
   #banner-screen { background: transparent; pointer-events: none; }
-  #banner-screen .inner { text-align: center; }
-  #banner-title { font-size: 54px; font-weight: 800; letter-spacing: 5px; color: #ffd76a; text-shadow: 0 4px 22px rgba(0,0,0,0.8); }
-  #banner-screen.bad #banner-title { color: #ff5d5d; }
-  #banner-sub { margin-top: 8px; font-size: 16.5px; color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,0.9); }
+  #banner-screen #banner-title { font-size: 44px; }
+  #banner-screen.bad #banner-title { color: #ff7a6a; }
+  #banner-sub { margin-top: 6px; font-size: 17px; font-weight: 700; color: #f7f1e2; text-shadow: 0 2px 10px rgba(0,0,0,0.8); }
+
+  /* shop overlays */
+  .shop { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(8, 10, 18, 0.42); z-index: 4; }
+  .shop.on { display: flex; }
+  .shop .card { width: 560px; max-width: 92vw; padding: 26px 32px 20px; border-radius: 16px; background: rgba(13, 16, 26, 0.94); border: 1px solid rgba(255, 255, 255, 0.12); box-shadow: 0 18px 60px rgba(0,0,0,0.55); }
+  .shop h2 { font-size: 31px; font-weight: 900; letter-spacing: 0.12em; color: #ffc528; margin-bottom: 14px; }
+  .shop .row { display: flex; justify-content: space-between; align-items: center; padding: 9px 2px; border-top: 1px solid rgba(255,255,255,0.09); font-size: 15.5px; }
+  .shop .row b { color: #59d977; font-weight: 800; }
+  .shop .row .plain { color: #f2ead8; }
+  .shop .key {
+    display: inline-flex; width: 24px; height: 24px; border-radius: 6px; margin-right: 10px;
+    background: #ffc528; color: #191408; font-weight: 900; font-size: 13.5px;
+    align-items: center; justify-content: center; vertical-align: -6px;
+  }
+  .shop .foot { display: flex; justify-content: space-between; margin-top: 13px; font-size: 12px; color: #9aa7b4; }
+  .shop .foot #g-respect { color: #7fb2e8; font-weight: 700; letter-spacing: 0.08em; }
 </style>
 </head>
 <body>
-<div id="wrap"><canvas id="game"></canvas></div>
+<div id="wrap">
+  <canvas id="game" width="1280" height="800"></canvas>
 
-<div class="hud panel" id="hud-left">
-  <div id="cash">$120</div>
-  <div id="progress">MISSION 1/8</div>
-  <div id="respect">RESPECT Lv 1 · NOBODY</div>
-  <div id="healthbar"><div id="healthfill"></div></div>
-  <div id="vehicle">On foot</div>
-  <div id="radio"></div>
-</div>
-<div class="hud panel" id="location"></div>
-
-<div class="hud" id="hud-right">
-  <div id="stars">☆☆☆☆☆</div>
-  <canvas id="minimap" width="220" height="165"></canvas>
-  <div class="panel" id="police"><div class="phead">PCPD RESPONSE</div><div class="prows"></div></div>
-</div>
-
-<div class="hud" id="weapons">
-  <div id="weapon"></div>
-  <div class="slots"></div>
-</div>
-
-<div class="hud" id="speed">
-  <div id="speed-name"></div>
-  <div><span id="speed-num">0</span> <span class="unit">km/h</span></div>
-</div>
-
-<div class="hud panel" id="dialogue">
-  <div id="dlg-face">M</div>
-  <div><div id="dlg-name"></div><div id="dlg-line"></div></div>
-</div>
-
-<div class="hud" id="hud-bottom">
-  <div id="bustwrap"><div id="bustlabel">BUSTED</div><div class="track"><div id="bustfill"></div></div></div>
-  <div id="prompt"></div>
-  <div id="objective">Waiting for the next job…</div>
-  <div id="hint">WASD move &amp; drive &amp; sail · E enter / exit · Mouse aim, click shoot · 1/2/3 weapons · F punch · H hold to rob · R radio / reload · G garage &amp; guns · P pause · M mute</div>
-</div>
-
-<button id="mute">Sound: on</button>
-
-<div class="screen" id="banner-screen"><div class="inner">
-  <div id="banner-title"></div><div id="banner-sub"></div>
-</div></div>
-
-<div class="screen on" id="title-screen"><div class="card">
-  <h1>PALM COAST HEAT</h1>
-  <div class="sub">JAX MARLOWE · WHEELMAN FOR HIRE</div>
-  <p>Steal rides, run packages, rob tills and outdrive the Palm Coast PD across a living
-     coastal city — on foot, by car and by boat. Eight story jobs from the people who run
-     this town, then courier work for as long as you can stay ahead of the law.</p>
-  <div class="controls">
-    WASD / arrows — move, drive &amp; sail · E — enter / exit car or boat<br>
-    Mouse — aim · click — shoot · 1/2/3 — weapons · F — punch · H (hold) — rob a shop<br>
-    R — radio / reload · G — garage at Marina Parking, guns at Palm Mall · P — pause · M — mute
+  <div id="hud-left" class="panel">
+    <div id="cash">$120</div>
+    <div id="progress">MISSION 1/8</div>
+    <div id="respect">RESPECT Lv 1 · NOBODY</div>
+    <div id="healthbar"><div id="healthfill"></div></div>
+    <div id="vehicle">On foot</div>
+    <div id="radio"></div>
+    <div id="hud-weapon-line"></div>
   </div>
-  <div class="press">Press ENTER to hit the streets</div>
-</div></div>
+  <div id="location" class="panel">PALM COAST</div>
 
-<div class="screen" id="pause-screen"><div class="card">
-  <h2>PAUSED</h2>
-  <p>The city holds its breath.</p>
-  <div class="controls">P — back to the streets<br>N — new game (wipes your save)</div>
-</div></div>
+  <div id="stars"></div>
+  <canvas id="minimap" width="220" height="165"></canvas>
+  <div id="police" class="panel" style="opacity:0"></div>
 
-<div class="screen" id="garage-screen"><div class="card">
-  <h2>MARINA GARAGE</h2>
-  <div class="kv"><span>Your cash</span><b id="g-cash">$0</b></div>
-  <div class="kv"><span>Current ride</span><span class="val" id="g-car">—</span></div>
-  <div class="kv"><span>Hull condition</span><span class="val" id="g-hull">—</span></div>
-  <div class="buyrow"><span class="key">1</span><span class="grow">Full repair</span><b>$150</b></div>
-  <div class="buyrow"><span class="key">2</span><span class="grow">Repaint</span><b>$80</b></div>
-  <div class="buyrow"><span class="key">3</span><span class="grow">Engine upgrade</span><b id="g-engine">STAGE 0/3</b></div>
-  <div class="buyrow"><span class="key">4</span><span class="grow">Armor wax (−20% damage)</span><b id="g-armor">Not fitted — $120</b></div>
-  <div class="foot"><span id="g-respect">RESPECT Lv 1 · NOBODY</span><span>Keys 1–4 buy · G or E closes</span></div>
-</div></div>
+  <button id="mute">Sound: on</button>
+  <div id="bustwrap" class="panel">
+    <div id="bustlabel">BUSTED</div>
+    <div id="bustbar"><div id="bustfill"></div></div>
+  </div>
 
-<div class="screen" id="arms-screen"><div class="card">
-  <h2>PALM MALL ARMS</h2>
-  <div class="kv"><span>Your cash</span><b id="a-cash">$0</b></div>
-  <div class="buyrow"><span class="key">1</span><span class="grow">SMG — automatic, 30-round mag</span><b id="a-smg">$900</b></div>
-  <div class="buyrow"><span class="key">2</span><span class="grow">Shotgun — five pellets, no manners</span><b id="a-shotgun">$1400</b></div>
-  <div class="buyrow"><span class="key">3</span><span class="grow">Ammo refill — every reserve, full</span><b id="a-ammo">$120</b></div>
-  <div class="foot"><span>Cash only. No names.</span><span>Keys 1–3 buy · G or E closes</span></div>
-</div></div>
+  <div id="weapons"></div>
+  <div id="speed" style="opacity:0">
+    <div id="speed-name"></div>
+    <span id="speed-num">0</span><small>km/h</small>
+  </div>
+
+  <div id="dialogue" class="panel">
+    <div id="dlg-port">M</div>
+    <div>
+      <div id="dlg-name">MARLO</div>
+      <div id="dlg-line"></div>
+    </div>
+  </div>
+  <div id="prompt"></div>
+  <div id="objective" class="panel">Waiting for the next job…</div>
+  <div id="hud-bottom">
+    <div id="hint">WASD move &amp; drive &amp; sail · E enter / exit · Mouse aim, click shoot · 1/2/3 weapons · F punch · H hold to rob a shop · R radio / reload · G garage &amp; guns · P pause · M mute</div>
+  </div>
+
+  <div id="title-screen" class="screen on">
+    <h1>PALM COAST HEAT</h1>
+    <div class="sub">JAX MARLOWE · WHEELMAN FOR HIRE</div>
+    <div class="card panel">
+      Steal rides, run packages and outdrive the Palm Coast PD across a living
+      coastal city — on foot, behind the wheel, or out on the water. Eight story
+      jobs for Jax Marlowe, then endless courier work. Rob the shops, tune the
+      car, buy heavier iron, and earn the city's respect. Five stars is a bad day.
+    </div>
+    <div class="go">Press ENTER to hit the streets</div>
+  </div>
+
+  <div id="pause-screen" class="screen">
+    <h2>PAUSED</h2>
+    <p>P — resume · M — sound · N — new game (wipes your save)</p>
+    <p>Progress saves itself. The city waits for no one.</p>
+  </div>
+
+  <div id="banner-screen" class="screen">
+    <div id="banner-title"></div>
+    <div id="banner-sub"></div>
+  </div>
+
+  <div id="garage-screen" class="shop">
+    <div class="card">
+      <h2>MARINA GARAGE</h2>
+      <div class="row"><span>Your cash</span><b id="g-cash">$0</b></div>
+      <div class="row"><span>Current ride</span><b class="plain" id="g-car">—</b></div>
+      <div class="row"><span>Hull condition</span><b class="plain" id="g-hull">—</b></div>
+      <div class="row"><span><span class="key">1</span>Full repair</span><b>$150</b></div>
+      <div class="row"><span><span class="key">2</span>Repaint</span><b>$80</b></div>
+      <div class="row"><span><span class="key">3</span>Engine upgrade</span><b id="g-engine">STAGE 0/3 — next $400</b></div>
+      <div class="row"><span><span class="key">4</span>Armor wax (−20% damage)</span><b id="g-armor">Not fitted — $120</b></div>
+      <div class="foot"><span id="g-respect"></span><span>Keys 1–4 buy · G or E closes</span></div>
+    </div>
+  </div>
+
+  <div id="arms-screen" class="shop">
+    <div class="card">
+      <h2>PALM MALL ARMS</h2>
+      <div class="row"><span>Your cash</span><b id="a-cash">$0</b></div>
+      <div class="row"><span><span class="key">1</span>SMG — automatic, hungry</span><b id="a-smg">$900</b></div>
+      <div class="row"><span><span class="key">2</span>SHOTGUN — five-pellet argument</span><b id="a-shotgun">$1400</b></div>
+      <div class="row"><span><span class="key">3</span>Ammo refill — every owned gun</span><b id="a-ammo">$120</b></div>
+      <div class="foot"><span>Licensed-ish. No refunds.</span><span>Keys 1–3 buy · G or E closes</span></div>
+    </div>
+  </div>
+</div>
 
 <script src="js/world.js"></script>
 <script src="js/vehicles.js"></script>

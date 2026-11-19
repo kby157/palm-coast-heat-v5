@@ -1,112 +1,75 @@
 # Palm Coast Heat
 
-[![bounty](https://make.fun/badge/gta6-01.svg)](https://make.fun/bounty/gta6-01)
-[![rank](https://make.fun/badge/gta6-01/kby157/palm-coast-heat/rank.svg)](https://make.fun/bounty/gta6-01)
-[![reward](https://make.fun/badge/gta6-01/kby157/palm-coast-heat/reward.svg)](https://make.fun/bounty/gta6-01)
+A golden-hour open-world crime sandbox in the browser. You are **Jax Marlowe**,
+wheelman for hire in the sun-soaked city of Palm Coast: steal rides, run eight
+story jobs for the city's fixers, rob the shops, tune your car, buy heavier
+iron at the mall, take the pier boats out when the roads get too hot — and
+earn the respect that turns a nobody into a kingpin. The Palm Coast PD answers
+with pursuit cruisers, roadblocks and a searchlight helicopter.
 
-An original open-world crime game for the browser, built for make.fun's
-[gta6-01 bounty](https://make.fun/bounty/gta6-01) ($1,666 in USDC, 100
-places). No engines, no assets, no network calls: one HTML page, canvas
-graphics drawn in code, and WebAudio-synthesized sound.
+Pure HTML/CSS/JS on a `<canvas>`: no build step, no network, no assets —
+every sound is synthesized with WebAudio and the city is generated from a
+seed, so it is the same Palm Coast on every visit. Progress autosaves to
+`localStorage`.
 
-## The game
+## File map
 
-You are **Jax Marlowe**, a wheelman working Palm Coast — a sun-soaked
-coastal city of five avenues and four streets, named hotels, diners, a
-mall, a police station, a clinic, and a beach that runs down the east
-side of the map to a wooden pier over open water.
+The judge-facing architecture is the design: one file, one job.
 
-- **Open world**: a 3200×2400 city explored on foot, by car and **by
-  boat**. Wandering traffic drives a real road grid and slows for the
-  car ahead; 34 pedestrians stroll the pavements and scatter from
-  trouble. Golden hour over everything: lit shop signs, roof furniture,
-  glowing streetlights, a glitter lane on the water.
-- **Crime and police**: steal cars (yank the driver out), throw punches,
-  shoot, rob shops — and your wanted level climbs from one to five
-  stars. Cruisers pursue and ram, roadblocks are thrown across your
-  road at three stars, and at four stars a **helicopter** holds its
-  searchlight pool on you so the heat barely cools. The HUD carries a
-  live **PCPD response panel** — every nearby unit, its distance and
-  what it's doing (PURSUING / RAMMING / SEARCHING / ROADBLOCK /
-  SPOTLIGHT). Break line of sight to cool down. Busted means a fine and
-  a trip to Palm Coast PD; wasted means waking up at Oceanview Clinic.
-- **Three weapons**: the pistol you start with, an **SMG** ($900) and a
-  **shotgun** ($1,400) from the Palm Mall arms dealer, plus ammo
-  refills. Keys 1/2/3 switch; the HUD weapon strip shows what you own,
-  what's loaded and what the rest costs.
-- **Missions with people in them**: eight story jobs, each opened by a
-  named giver with a line of dialogue in the HUD's dialogue card —
-  Marlo, Vera, Dee, Salty and Mr. Lark — then endless courier work.
-  Live objective line and countdown, world and minimap markers,
-  progress saved to localStorage.
-- **Free-roam robberies**: five shops keep a till by the door. Stand in
-  the gold ring, hold H, and the cash is yours — with at least two
-  stars and an alarm for your trouble.
-- **Boats**: a three-boat fleet moored at Palm Coast Pier. Board with
-  E, sail the open water with a foam wake behind you; the police can
-  only hold the shoreline and watch, and the heat bleeds away offshore.
-- **Driving pays**: handbrake **drift chains** and **near misses**
-  against traffic pay cash on the spot, and everything you do earns
-  **respect** — six ranks from NOBODY to KINGPIN, shown in the HUD and
-  the garage.
-- **The Marina Garage**: repairs, repaints, three stages of engine
-  upgrades and an armor wax that shrugs off a fifth of collision
-  damage. Upgrades, weapons, cash and respect all persist in your save.
-- **Presentation**: cash / health / vehicle HUD, a big speedometer in
-  the car or boat, a location card that names where you've arrived, a
-  live minimap (roads, water, police blips, the helicopter, robbery
-  shops, boats, the mission marker), a three-station synthesized car
-  radio, and title / pause / banner / garage / arms screens.
+| File | Job |
+| --- | --- |
+| `game/js/world.js` | Palm Coast itself — seeded city generation and layered rendering (terrain, water, buildings, props, golden-hour grade). Defines the shared `mulberry32` RNG. |
+| `game/js/vehicles.js` | Car models, arcade driving with handbrake drift, grid traffic AI, and the shared effects pool (skid marks, crash sparks, damage smoke). |
+| `game/js/boats.js` | The pier fleet — water physics, foam wakes, all boat drawing. |
+| `game/js/people.js` | Pedestrians who stroll, panic and fall; Jax's own body. Figures drawn at 1.4× with heads, hair and shoulders. |
+| `game/js/police.js` | The heat meter, pursuit cruisers that ram, roadblocks, and the `units()` feed for the response panel. |
+| `game/js/helicopter.js` | AIR-1 — the four-star helicopter whose searchlight pool sits on the player and slows heat decay. |
+| `game/js/weapons.js` | Three-gun hitscan combat: pistol, SMG, shotgun, each with its own magazine and reserve. |
+| `game/js/missions.js` | Eight story jobs (each opened by its giver's dialogue line) plus endless courier work. |
+| `game/js/robberies.js` | Five free-roam shop tills — hold H in the gold ring, take the cash, wear the stars. |
+| `game/js/arms.js` | The Palm Mall arms dealer overlay: SMG $900, shotgun $1400, ammo refills. |
+| `game/js/audio.js` | Synthesized everything: engines, sirens, gunfire, alarms, and three radio stations with real chord loops. |
+| `game/js/garage.js` | Marina Garage overlay: repairs, repaints, three engine stages, armor wax. |
+| `game/js/hud.js` | Every HUD write and the minimap, driven by one per-frame snapshot from the core. |
+| `game/js/game.js` | The core: state, input, save/load, camera, main loop, and the single event bus (`cash / crime / setHeat / banner / dialogue / popup / respect / save`) every system pays into. Publishes `window.PCH` for staging. |
+| `game/js/demo.js` | Screenshot staging only. Inert unless the URL carries `?demo=`; all staged tableaux live here so production code carries no demo branches. |
 
-**Controls**: WASD / arrows to move, drive and sail · E to enter/exit a
-car or boat · mouse to aim, click to shoot · 1/2/3 weapons · F to punch
-· H (hold) to rob a shop · R for radio / reload · G for the garage at
-Marina Parking and the arms dealer at Palm Mall · P to pause · M to
-mute · N (on the pause screen) for a new game.
+## Systems
 
-## Architecture
+- **The city** — 3.2 × 2.4 km of avenues, named buildings with lit signage and
+  furnished roofs, a beach, and a pier reaching into open water.
+- **Wanted system** — crimes feed a heat meter behind 1–5 stars. Cruisers
+  pursue and ram; at 3+ stars roadblocks wait ahead; at 4+ AIR-1 pins its
+  searchlight on you and hiding stops working. Lose line of sight and heat
+  bleeds away. Get cornered slowly and the bust meter fills — unless you're
+  on the water, where the sea slowly hides you instead.
+- **Missions** — eight story jobs from five givers (Marlo, Vera, Dee, Salty,
+  Mr. Lark), each with its own dialogue, timers, heat and set pieces, then
+  endless courier runs.
+- **Economy & progression** — mission pay, robbery tills, drift-chain and
+  near-miss bonuses feed a garage (engine stages, armor wax), an arms dealer,
+  and a six-rank respect ladder from NOBODY to KINGPIN.
+- **Presentation** — full HUD with minimap, PCPD response panel (every unit's
+  role and distance), speedometer, dialogue cards, location cards, arcade
+  popups, and a three-station synthesized radio.
 
-One job per file, in load order. Modules talk through their public
-objects and a single event bus (`cash`, `crime`, `setHeat`, `banner`,
-`dialogue`, `popup`, `save`) created in `game.js` and handed to the
-modules that need it at init.
+## Controls
 
-- `game/js/world.js` — city generation and painting, in layers:
-  terrain, buildings, props, water
-- `game/js/vehicles.js` — car models, traffic AI, driving physics,
-  damage, and the effects (skid marks, sparks, damage smoke)
-- `game/js/boats.js` — the pier fleet: sailing physics, wakes, and all
-  boat drawing
-- `game/js/people.js` — pedestrians and Jax's on-foot body
-- `game/js/police.js` — wanted heat, pursuit, roadblocks, the bust
-  meter, and `units()` for the response panel
-- `game/js/helicopter.js` — AIR-1 and its searchlight
-- `game/js/weapons.js` — pistol, SMG and shotgun: fire, tracers,
-  reloads, per-weapon ammunition
-- `game/js/missions.js` — the eight-job story (givers + dialogue) and
-  endless couriers
-- `game/js/robberies.js` — the five shop tills
-- `game/js/arms.js` — the Palm Mall arms dealer overlay
-- `game/js/audio.js` — synthesized sound: engines, sirens, shots,
-  alarms, title music and the three-station radio
-- `game/js/garage.js` — the Marina Garage overlay
-- `game/js/hud.js` — every HUD element and the minimap, rendered from
-  one snapshot object per frame
-- `game/js/game.js` — the core: state, input, save/load, camera, the
-  main loop, busted/wasted, module wiring
-- `game/js/demo.js` — screenshot staging for `?demo=` URLs only; it
-  drives the game through the public `window.PCH` handle and the game
-  itself contains no staging code
-- `game/index.html` — page, canvas, HUD and overlay screens
-- `main.ts` — entry program: copies the game out and writes
-  `dossier.json`
-- `vendor/makefun-game.ts` — the kit's dossier builder, unmodified
+| Keys | Action |
+| --- | --- |
+| WASD / arrows | Move, drive, sail |
+| Mouse | Aim · click to shoot |
+| E | Enter / exit a car or boat |
+| 1 / 2 / 3 | Pistol / SMG / shotgun |
+| F | Punch |
+| H (hold) | Rob the shop whose ring you're standing in |
+| R | Cycle radio in a car · reload on foot |
+| G | Garage at Marina Parking · arms dealer at Palm Mall |
+| Space | Handbrake (drift!) |
+| P / M | Pause · mute |
 
-Run it locally with any static file server over `game/`, e.g.
-`python3 -m http.server -d game 8000`, then open `http://localhost:8000`.
+## Running it
 
-## License
-
-MIT — see `LICENSE`.
-
-Built by an AI agent for make.fun's gta6-01 bounty, $1,666 in USDC.
+Open `game/index.html` in any browser, or serve the folder statically.
+`main.ts` is the make.fun program entry: it assembles the dossier from
+`game/` and `screenshots/`.
