@@ -1,42 +1,53 @@
-// arms.js — the Palm Mall arms dealer: a quiet counter at the mall's
-// door where the SMG, the shotgun and fresh ammunition change hands.
-// G opens it at the Palm Mall doorstep; keys 1-3 buy; purchases land in
-// Weapons.state and persist through the save.
-
+// arms.js — the Palm Mall arms dealer: a quiet counter at the mall doorstep
+// where cash turns into firepower. SMG, shotgun, and bottomless-ish ammo.
+// Purchases land in Weapons.state, so they persist through the save file.
 const Arms = (() => {
+  const PRICES = { smg: 900, shotgun: 1400, ammo: 120 };
   const state = { open: false };
-  const el = (id) => document.getElementById(id);
+  let anchor = null;
 
-  function anchor() { return World.doorstep(World.buildingNamed('Palm Mall')); }
-  function playerNear(pos) {
-    const a = anchor();
-    return Math.hypot(a.x - pos.x, a.y - pos.y) < 64;
+  function spot() {
+    if (!anchor) {
+      const mall = World.buildingNamed('Palm Mall');
+      anchor = mall ? World.doorstep(mall) : { x: 0, y: 0 };
+    }
+    return anchor;
   }
-  function open() { state.open = true; el('arms-screen').classList.add('on'); AudioSys.door(); }
+  function near(pos) { const a = spot(); return Math.hypot(pos.x - a.x, pos.y - a.y) < 76; }
+
+  const el = (id) => document.getElementById(id);
+  function open() { state.open = true; el('arms-screen').classList.add('on'); }
   function close() { state.open = false; el('arms-screen').classList.remove('on'); }
 
-  function refresh(snap) {
-    el('a-cash').textContent = '$' + snap.cash;
-    el('a-smg').textContent = Weapons.state.owned.smg ? 'OWNED' : '$900';
-    el('a-shotgun').textContent = Weapons.state.owned.shotgun ? 'OWNED' : '$1400';
-    el('a-ammo').textContent = '$120';
+  function refresh(cash) {
+    el('a-cash').textContent = '$' + cash;
+    el('a-smg').textContent = Weapons.state.owned.smg ? 'OWNED' : '$' + PRICES.smg;
+    el('a-shotgun').textContent = Weapons.state.owned.shotgun ? 'OWNED' : '$' + PRICES.shotgun;
+    el('a-ammo').textContent = '$' + PRICES.ammo;
   }
 
-  // shop = { funds(), spend(n), save() } from game.js
-  function buy(kind, shop) {
+  function buy(kind, bus, cash) {
     if (kind === 'smg' || kind === 'shotgun') {
-      const price = Weapons.byId[kind].price;
-      if (Weapons.state.owned[kind] || shop.funds() < price) return;
-      shop.spend(price);
-      Weapons.grant(kind);
+      if (Weapons.state.owned[kind] || cash < PRICES[kind]) { AudioSys.busted(); return false; }
+      bus.cash(-PRICES[kind]);
+      Weapons.state.owned[kind] = true;
+      const a = Weapons.state.ammo[kind], d = Weapons.DEFS[kind];
+      a.mag = d.mag; a.res = d.reserve;
+      AudioSys.cashRegister();
+      bus.popup(anchor.x, anchor.y - 30, d.name + ' ACQUIRED', 'Palm Mall Arms');
     } else if (kind === 'ammo') {
-      if (shop.funds() < 120) return;
-      shop.spend(120);
-      Weapons.refillAmmo();
-    } else return;
-    AudioSys.cashRegister();
-    shop.save();
+      if (cash < PRICES.ammo) { AudioSys.busted(); return false; }
+      bus.cash(-PRICES.ammo);
+      for (const key of Weapons.ORDER) {
+        if (!Weapons.state.owned[key]) continue;
+        Weapons.state.ammo[key].res += Weapons.DEFS[key].reserve;
+      }
+      AudioSys.cashRegister();
+      bus.popup(anchor.x, anchor.y - 30, 'AMMO RESTOCKED', 'Palm Mall Arms');
+    } else return false;
+    bus.save();
+    return true;
   }
 
-  return { state, playerNear, open, close, refresh, buy };
+  return { PRICES, state, spot, near, open, close, refresh, buy };
 })();

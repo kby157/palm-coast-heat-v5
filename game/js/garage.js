@@ -1,57 +1,62 @@
-// garage.js — the Marina Garage counter at Marina Parking: full
-// repairs, repaints, three stages of engine work and an armor wax that
-// shrugs off a fifth of every dent. G opens it; keys 1-4 buy; the panel
-// also carries your respect standing in its footer.
-
+// garage.js — the Marina Garage: repairs, repaints, engine stages and armor
+// wax, bought with number keys while the panel is up. Stage and wax live in
+// Garage.state so game.js can persist them and feed them to Vehicles.
 const Garage = (() => {
   const PRICES = { repair: 150, repaint: 80, engine: 400, armor: 120 };
   const REPAINTS = ['#c22f6d', '#2fa39a', '#e8b13c', '#3f7fbf', '#7a4fa3', '#e8e3d8', '#22242a', '#59b06a'];
-  const state = { open: false };
-  const el = (id) => document.getElementById(id);
+  const state = { open: false, stage: 0, armor: false };
+  let anchor = null;
+  let paintIdx = 0;
 
-  function anchor() { return World.doorstep(World.buildingNamed('Marina Parking')); }
-  function playerNear(pos) {
-    const a = anchor();
-    return Math.hypot(a.x - pos.x, a.y - pos.y) < 64;
+  function spot() {
+    if (!anchor) {
+      const lot = World.buildingNamed('Marina Parking');
+      anchor = lot ? World.doorstep(lot) : { x: 0, y: 0 };
+    }
+    return anchor;
   }
-  function open() { state.open = true; el('garage-screen').classList.add('on'); AudioSys.door(); }
+  function playerNear(pos) { const a = spot(); return Math.hypot(pos.x - a.x, pos.y - a.y) < 84; }
+
+  const el = (id) => document.getElementById(id);
+  function open() { state.open = true; el('garage-screen').classList.add('on'); }
   function close() { state.open = false; el('garage-screen').classList.remove('on'); }
 
-  // snap = { cash, carName, hullPct|null, engineStage, armorOwned, respectText }
-  function refresh(snap) {
-    el('g-cash').textContent = '$' + snap.cash;
-    el('g-car').textContent = snap.carName || '— (on foot)';
-    el('g-hull').textContent = snap.hullPct === null ? '—' : snap.hullPct + '%';
-    el('g-engine').textContent = snap.engineStage >= 3 ? 'STAGE 3/3 — MAX' :
-      'STAGE ' + snap.engineStage + '/3 — next $' + PRICES.engine;
-    el('g-armor').textContent = snap.armorOwned ? 'Fitted' : 'Not fitted — $' + PRICES.armor;
-    el('g-respect').textContent = snap.respectText;
+  function refresh(cash, car, respectLine) {
+    el('g-cash').textContent = '$' + cash;
+    el('g-car').textContent = car ? car.name : 'On foot';
+    el('g-hull').textContent = car ? Math.round(car.health) + '%' : '—';
+    el('g-engine').textContent = state.stage >= 3 ? 'STAGE 3/3 — MAX' : `STAGE ${state.stage}/3 — next $${PRICES.engine}`;
+    el('g-armor').textContent = state.armor ? 'Fitted' : `Not fitted — $${PRICES.armor}`;
+    el('g-respect').textContent = respectLine;
   }
 
-  // hooks = { funds(), spend(n), car(), save(), engineStage(), bumpEngine(), armorOwned(), fitArmor() }
-  function buy(kind, hooks) {
-    const car = hooks.car();
+  function buy(kind, bus, car, cash) {
+    const done = (msg) => { AudioSys.cashRegister(); bus.save(); return true; };
     if (kind === 'repair') {
-      if (!car || car.health >= 100 || hooks.funds() < PRICES.repair) return;
-      car.health = 100;
-      hooks.spend(PRICES.repair);
-    } else if (kind === 'repaint') {
-      if (!car || hooks.funds() < PRICES.repaint) return;
-      const next = REPAINTS[(REPAINTS.indexOf(car.color) + 1 + REPAINTS.length) % REPAINTS.length];
-      car.color = next === car.color ? REPAINTS[0] : next;
-      hooks.spend(PRICES.repaint);
-    } else if (kind === 'engine') {
-      if (hooks.engineStage() >= 3 || hooks.funds() < PRICES.engine) return;
-      hooks.bumpEngine();
-      hooks.spend(PRICES.engine);
-    } else if (kind === 'armor') {
-      if (hooks.armorOwned() || hooks.funds() < PRICES.armor) return;
-      hooks.fitArmor();
-      hooks.spend(PRICES.armor);
-    } else return;
-    AudioSys.cashRegister();
-    hooks.save();
+      if (!car || car.health >= 100 || cash < PRICES.repair) return false;
+      bus.cash(-PRICES.repair); car.health = 100; return done();
+    }
+    if (kind === 'repaint') {
+      if (!car || cash < PRICES.repaint) return false;
+      bus.cash(-PRICES.repaint);
+      paintIdx = (paintIdx + 1) % REPAINTS.length;
+      car.color = REPAINTS[paintIdx];
+      return done();
+    }
+    if (kind === 'engine') {
+      if (state.stage >= 3 || cash < PRICES.engine) return false;
+      bus.cash(-PRICES.engine); state.stage++;
+      Vehicles.setTune(state.stage);
+      return done();
+    }
+    if (kind === 'armor') {
+      if (state.armor || cash < PRICES.armor) return false;
+      bus.cash(-PRICES.armor); state.armor = true;
+      Vehicles.setArmor(true);
+      return done();
+    }
+    return false;
   }
 
-  return { PRICES, REPAINTS, state, playerNear, open, close, refresh, buy };
+  return { PRICES, REPAINTS, state, spot, playerNear, open, close, refresh, buy };
 })();
